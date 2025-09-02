@@ -1,51 +1,63 @@
 require('dotenv').config();
 
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: process.env.WS_PORT || 8081 });
-
 const express = require('express');
+const WebSocket = require('ws');
+
 const app = express();
-
 const PORT = process.env.EXPRESS_PORT || 3000;
+const WS_PORT = process.env.WS_PORT || 8081;
 
+// --- Express Routen ---
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send(`<!DOCTYPE html>
+<html>
+<body>
+<h1>Current Time:</h1>
+<div id="time"></div>
+
+<script>
+const ws = new WebSocket('ws://dev.ferris.home64.de:8081');
+
+ws.onmessage = (event) => {
+    document.getElementById('time').innerText = event.data;
+};
+</script>
+</body>
+</html>`);
 });
 
 app.get('/time', (req, res) => {
     const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-    
-    console.log(`${hours}:${minutes}:${seconds}`);
-    res.send(`${hours}:${minutes}:${seconds}`);
+    const timeString = now.toLocaleTimeString();
+    console.log(timeString);
+    res.send(timeString);
 });
 
 app.get('/greet/:name', (req, res) => {
-    ClientName = req.params.name;
-    res.send('Hello ' + ClientName);
+    const clientName = req.params.name;
+    res.send('Hello ' + clientName);
 });
 
+// Start Express Server
 app.listen(PORT, () => {
-    console.log('Server is running on http://dev.ferris.home64.de:' + PORT);
+    console.log('Express server running on http://dev.ferris.home64.de:' + PORT);
 });
+
+// --- WebSocket Server ---
+const wss = new WebSocket.Server({ port: WS_PORT });
 
 wss.on('connection', (ws) => {
-  console.log('Client connected');
+    console.log('WebSocket client connected');
 
-  // Send the current time every second
-  const interval = setInterval(() => {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString();
-    ws.send(timeString);
-  }, 1000);
+    const interval = setInterval(() => {
+        const now = new Date();
+        ws.send(now.toLocaleTimeString());
+    }, 1000);
 
-  // Clear interval if client disconnects
-  ws.on('close', () => {
-    console.log('Client disconnected');
-    clearInterval(interval);
-  });
+    ws.on('close', () => {
+        console.log('WebSocket client disconnected');
+        clearInterval(interval);
+    });
 });
 
-console.log('WebSocket server running on ws://localhost:8080');
+console.log('WebSocket server running on ws://dev.ferris.home64.de:' + WS_PORT);
