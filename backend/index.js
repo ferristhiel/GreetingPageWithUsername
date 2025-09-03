@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const path = require('path');
+const cors = require('cors');
 const express = require('express');
 const WebSocket = require('ws');
 
@@ -7,30 +9,17 @@ const app = express();
 const PORT = process.env.EXPRESS_PORT || 3000;
 const WS_PORT = process.env.WS_PORT || 8081;
 
+app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(cors());
+
 // --- Express Routen ---
 app.get('/', (req, res) => {
-    res.send(`<!DOCTYPE html>
-<html>
-<body>
-<h1>Current Time:</h1>
-<div id="time"></div>
-
-<script>
-const ws = new WebSocket('ws://dev.ferris.home64.de:8081');
-
-ws.onmessage = (event) => {
-    document.getElementById('time').innerText = event.data;
-};
-</script>
-</body>
-</html>`);
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 app.get('/time', (req, res) => {
     const now = new Date();
-    const timeString = now.toLocaleTimeString();
-    console.log(timeString);
-    res.send(timeString);
+    res.send(now.toLocaleTimeString());
 });
 
 app.get('/greet/:name', (req, res) => {
@@ -46,16 +35,20 @@ app.listen(PORT, () => {
 // --- WebSocket Server ---
 const wss = new WebSocket.Server({ port: WS_PORT });
 
-wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
+wss.on('connection', (ws, req) => {
+    const ip = req.socket.remoteAddress;
+    console.log('WS Client connected: ' + ip);
+
+    // Start counter for this connection
+    let seconds = 0;
 
     const interval = setInterval(() => {
-        const now = new Date();
-        ws.send(now.toLocaleTimeString());
+        seconds++;
+        ws.send(seconds);
     }, 1000);
 
     ws.on('close', () => {
-        console.log('WebSocket client disconnected');
+        console.log('WS Client disconnected: ' + ip);
         clearInterval(interval);
     });
 });

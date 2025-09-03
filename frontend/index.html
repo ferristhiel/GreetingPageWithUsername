@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <p>test</p>
+    <h1 id="time"></h1>
+
+    <script>
+        const ws = new WebSocket('ws://wsdev.ferris.home64.de:8081');
+
+        ws.onmessage = (event) => {
+            if(event.data > 1) {
+                document.getElementById('time').innerText = 'Connected for ' + event.data + ' seconds';
+            } else {
+                document.getElementById('time').innerText = 'Connected for ' + event.data + ' second';
+            }
+        };
+    </script>
+</body>
+</html>
